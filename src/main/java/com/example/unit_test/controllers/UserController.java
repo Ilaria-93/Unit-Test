@@ -16,48 +16,50 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    //crea nuovo user
+    // Crea un nuovo utente
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userRepository.save(user);
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        User createdUser = userRepository.save(user);
+        return ResponseEntity.ok(createdUser);
     }
 
-    //restituisce la lista di tutti gli users
+    // Restituisce la lista di tutti gli utenti
     @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(users);
     }
 
-    //restituisce un singolo user - se id non è presente in db (usa existsById()), restituisce user vuoto
+    // Restituisce un singolo utente - se l'id non è presente nel db, restituisce 404 Not Found
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Integer id) {
-        if (userRepository.existsById(id)) {
-            User user = userRepository.findById(id).orElse(null);
-            return ResponseEntity.ok(user);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        Optional<User> user = userRepository.findById(Math.toIntExact(id));
+        return user.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    //aggiorna type dell'user specifico - se id non è presente in db (usa existsById()), restituisce user vuoto
+    // Aggiorna un utente specifico - se l'id non è presente nel db, restituisce 404 Not Found
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User userDetails) {
-        if (userRepository.existsById(id)) {
-            User user = userRepository.findById(id).orElseThrow();
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        Optional<User> optionalUser = userRepository.findById(Math.toIntExact(id));
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
             user.setEmail(userDetails.getEmail());
             user.setFirstName(userDetails.getFirstName());
             user.setLastName(userDetails.getLastName());
-            return ResponseEntity.ok(userRepository.save(user));
+            User updatedUser = userRepository.save(user);
+            return ResponseEntity.ok(updatedUser);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
 
-    //cancella l'user specifico
+    // Cancella un utente specifico
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        Optional<User> optionalUser = userRepository.findById(Math.toIntExact(id));
+        if (optionalUser.isPresent()) {
+            userRepository.deleteById(Math.toIntExact(id));
             return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
